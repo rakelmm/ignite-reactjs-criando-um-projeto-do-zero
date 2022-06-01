@@ -1,4 +1,7 @@
 import { GetStaticProps } from 'next';
+import Link from 'next/link';
+import Header from '../components/Header';
+import { FiCalendar, FiUser } from 'react-icons/fi'
 
 import { getPrismicClient } from '../services/prismic';
 
@@ -24,9 +27,37 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-// export default function Home() {
-//   // TODO
-// }
+export default function Home() {
+  return (
+    <>
+      <main className={commonStyles.container}>
+        <Header />
+        <div>
+          <Link href="/">
+            <a className={styles.post}>
+              <strong>Como utilizar Hooks</strong>
+              <p>Pensando em sincronização em vez de ciclos de vida.</p>
+              <ul>
+                <li>
+                  <FiCalendar />
+                  01 jun 2022
+                </li>
+                <li>
+                  <FiUser />
+                  Rakel Moreira
+                </li>
+              </ul>
+            </a>
+          </Link>
+          <button type='button'>
+            Carregando mais posts
+          </button>
+        </div>
+
+      </main>
+    </>
+  );
+}
 
 // export const getStaticProps = async () => {
 //   // const prismic = getPrismicClient({});
