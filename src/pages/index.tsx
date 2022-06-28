@@ -11,6 +11,7 @@ import styles from './home.module.scss';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import ptBR from 'date-fns/esm/locale/pt-BR/index.js';
+import  Head  from 'next/head';
 
 interface Post {
   uid?: string;
@@ -44,34 +45,75 @@ export default function Home({ postsPagination }: HomeProps) {
       ),
     };
   });
-  const [posts, setPosts] = useState<Post[]>(
-   
-  );
+  const [posts, setPosts] = useState<Post[]>(formattedPost);
+  const [nextPage, setNextpage] = useState(postsPagination.next_page);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  async function handleNextPage(): Promise<void> {
+    if (currentPage !== 1 && nextPage === null) {
+      return;
+    }
+
+    const postsResults = await fetch(`${nextPage}`).then(response =>
+      response.json()
+    );
+    setNextpage(postsResults.next_page);
+    setCurrentPage(postsResults.page);
+
+    const newPosts = postsResults.results.map(post => {
+      return {
+          uid: post.uid,
+          first_ublication_date: format(
+            new Date(post.first_publication_date),
+            'dd MMM yyyy',
+            {
+              locale: ptBR,
+            }
+          ),
+          data: {
+            title: post.data.title,
+            subtitle: post.data.subtitle,
+            author: post.data.author,
+          },
+        };
+    });
+    setPosts([...posts, ...newPosts]);
+  }
 
   return (
     <>
+      <Head>
+        <title>Home | spacetraveling</title>
+      </Head>
+
       <main className={commonStyles.container}>
         <Header />
-        <div>
-          <Link href="/">
-            <a className={styles.post}>
-              <strong>Como utilizar Hooks</strong>
-              <p>Pensando em sincronização em vez de ciclos de vida.</p>
-              <ul>
-                <li>
-                  <FiCalendar />
-                  01 jun 2022
-                </li>
-                <li>
-                  <FiUser />
-                  Rakel Moreira
-                </li>
-              </ul>
-            </a>
-          </Link>
-          <button type='button'>
+        <div className={styles.posts}>
+
+          {posts.map(post => (
+            <Link href={`/post/${post.uid}`} key={post.uid}>
+              <a className={styles.post}>
+                <strong>{post.data.title}</strong>
+                <p>{post.data.subtitle}</p>
+                <ul>
+                  <li>
+                    <FiCalendar />
+                    {post.first_publication_date}
+                  </li>
+                  <li>
+                    <FiUser />
+                    {post.data.author}
+                  </li>
+                </ul>
+              </a>
+            </Link>
+          ))}
+
+          {nextPage  && (
+            <button type='button' onClick={handleNextPage}>
             Carregando mais posts
           </button>
+          )}
         </div>
 
       </main>
@@ -82,9 +124,9 @@ export default function Home({ postsPagination }: HomeProps) {
 export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient({});
   const postsResponse = await prismic.getByType(Prismic.Predicates.at('document.type', 'posts'),
-  {
-    pageSize: 1,
-  });
+    {
+      pageSize: 1,
+    });
 
   const posts = postsResponse.results.map(post => {
     return {
@@ -92,7 +134,7 @@ export const getStaticProps: GetStaticProps = async () => {
       first_ublication_date: post.first_publication_date,
       data: {
         title: post.data.title,
-        substitle: post.data.subtitle,
+        subtitle: post.data.subtitle,
         author: post.data.author,
       },
     };
@@ -101,7 +143,7 @@ export const getStaticProps: GetStaticProps = async () => {
   const postsPagination = {
 
     next_page: postsResponse.next_page,
-    results: posts, 
+    results: posts,
   }
 
   return {
